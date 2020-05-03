@@ -1,0 +1,1 @@
+A simple woocoomerce plugin to allow customers pay on credit with interest. Current duration is 4 months and 6 months

@@ -1,0 +1,19 @@
+/log
+*.log
+*error_log
+
+# Hidden system files
+*.DS_Store
+*[Tt]humbs.db
+*.Trashes
+
+
+# ignore packaged files
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
