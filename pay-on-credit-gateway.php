@@ -119,7 +119,7 @@ function upload_id_card_field( $checkout ) {
 
     $uploadFile   .='<div id="national-id" class="woocommerce-billing-fields__field-wrapper"><p id="upload_doc" class="form-row form-row-wide">';
     $uploadFile   .='<label for="id_card_upload">'. __('Upload National ID') . '&nbsp<abbr class="required" title="required">*</abbr></label>';
-    $uploadFile .='<span class="woocommerce-input-wrapper"><input id="id_card_upload" name="id_card_file" style="min-height:auto!important; width:100%" type="file" accept="image/png,image/jpeg,application/pdf" required>';
+    $uploadFile .='<span class="woocommerce-input-wrapper"><input id="id_card_upload" class="input-text" name="id_card_file" style="padding-top: 8px;" type="file" accept="image/png,image/jpeg,application/pdf" required>';
     $uploadFile .='<span id="uploadComplete">';
     $uploadFile .='</span></span>';
     $uploadFile .='</p></div><input type="hidden" name="id_card" id="id_card_url">';

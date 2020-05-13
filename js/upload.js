@@ -11,6 +11,17 @@
 
         var success = '<p id="id-card-success" style="color: #12a058;">Successfully Uploaded</p>';
 
+        $imgForm
+
+        $imgForm.submit(function( event ) {
+            payment_method = $("input[name='payment_method']:checked").val()
+
+            imgUpload = $("input[name='id_card']").val();
+
+            if(payment_method == 'wcpg-pay-on-credit' && imgUpload == ''){
+                $('#upload_doc').addClass('woocommerce-invalid woocommerce-invalid-required-field')
+            }
+          });
 
         $imgFile.on('change', function(e) {
             e.preventDefault();
