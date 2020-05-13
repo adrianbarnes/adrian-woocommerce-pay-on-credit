@@ -7,6 +7,24 @@
  * Version: 1.0.0
  *
  * 
+ */
+
+function nat_card_load_scripts() {
+    wp_enqueue_script('national-id-js', plugin_dir_url( __FILE__ ) . 'js/upload.js', array('jquery'), '0.1.0', true);
+
+    $data = array(
+        'upload_url' => admin_url('async-upload.php'),
+        'ajax_url'   => admin_url('admin-ajax.php'),
+        'nonce'      => wp_create_nonce('media-form')
+    );
+
+    wp_localize_script( 'national-id-js', 'nat_card_config', $data );
+
+}
+
+add_action( 'woocommerce_after_checkout_form', 'nat_card_load_scripts' );
+
+
 
  /*
  * This action hook registers our PHP class as a WooCommerce payment gateway
@@ -41,7 +59,106 @@ function wcpg_pay_on_credit_script() {
   <?php
   }
   add_action( 'woocommerce_after_checkout_form', 'wcpg_pay_on_credit_script' );
-  //add_action( 'woocommerce_review_order_before_payment', 'wcpg_pay_on_credit_script' );
+
+/*
+ * This requires uploading an ID if customer selects pay on credit
+ */  
+
+add_action( 'wp_footer', 'conditionally_show_hide_billing_custom_field' );
+function conditionally_show_hide_billing_custom_field(){
+    // Only on checkout page
+     if ( is_checkout() && ! is_wc_endpoint_url() ) :
+    ?>
+    <script>
+        jQuery(function($){
+            var a = 'input[name="payment_method"]',
+                b = a + ':checked',
+                c = '#national-id'; // The checkout field <p> container selector
+
+            // Function that shows or hide checkout fields
+            function showHide( selector = '', action = 'show' ){
+                if( action == 'show' )
+                    $(selector).show( 200, function(){
+                        $(this).children('p').addClass("validate-required");
+                    });
+                else
+                    $(selector).hide( 200, function(){
+                        $(this).children('p').removeClass("validate-required");
+                    });
+                $(selector).children('p').removeClass("woocommerce-validated");
+                $(selector).children('p').removeClass("woocommerce-invalid woocommerce-invalid-required-field");
+            }
+
+            // Initialising: Hide if choosen payment method is "wcpg-pay-on-credit"
+            if( $(b).val() !== 'wcpg-pay-on-credit' )
+                showHide( c, 'hide' );
+            else
+                showHide( c );
+
+            // Live event (When payment method is changed): Show or Hide based on "wcpg-pay-on-credit"
+            $( 'form.checkout' ).on( 'change', a, function() {
+                if( $(b).val() !== 'wcpg-pay-on-credit' )
+                    showHide( c, 'hide' );
+                else
+                    showHide( c );
+            });
+        });
+    </script>
+    <?php
+    endif;
+}
+
+/**
+ * Add the field to the checkout page
+ */
+add_action( 'woocommerce_after_checkout_billing_form', 'upload_id_card_field' );
+ 
+function upload_id_card_field( $checkout ) {
+ 
+    $uploadFile   = "";
+
+    $uploadFile   .='<div id="national-id" class="woocommerce-billing-fields__field-wrapper"><p id="upload_doc" class="form-row form-row-wide">';
+    $uploadFile   .='<label for="id_card_upload">'. __('Upload National ID') . '&nbsp<abbr class="required" title="required">*</abbr></label>';
+    $uploadFile .='<span class="woocommerce-input-wrapper"><input id="id_card_upload" name="id_card_file" style="min-height:auto!important; width:100%" type="file" accept="image/png,image/jpeg,application/pdf" required>';
+    $uploadFile .='<span id="uploadComplete">';
+    $uploadFile .='</span></span>';
+    $uploadFile .='</p></div><input type="hidden" name="id_card" id="id_card_url">';
+    echo $uploadFile;    
+ 
+}  
+
+/** National ID Uploader */
+add_action('woocommerce_checkout_process', 'upload_id_card_field_save');
+
+ 
+function upload_id_card_field_save() {
+    // Check if the field is set, if not then show an error message.
+
+    if ( isset($_POST['id_card']) && empty($_POST['id_card']) && $_POST['payment_method'] == 'wcpg-pay-on-credit')
+        wc_add_notice( __( '<strong>Upload National ID</strong> is a required field.' ), 'error' );
+    
+}
+
+add_action( 'woocommerce_checkout_update_order_meta', 'upload_id_card_field_update_order_meta' );
+
+function upload_id_card_field_update_order_meta( $order_id ) {
+    if ( ! empty( $_POST['id_card'] ) && $_POST['payment_method'] == 'wcpg-pay-on-credit') {
+
+        update_post_meta( $order_id, '_national_id', $_POST['id_card'] );
+    }
+
+}
+
+add_action( 'woocommerce_admin_order_data_after_billing_address', 'upload_id_card_field_display_admin_order_meta', 10, 1 );
+
+function upload_id_card_field_display_admin_order_meta($order){
+
+    $national_id = get_post_meta( $order->get_id(), '_national_id', true );
+    echo '<p><strong>'.__('National ID').':</strong> <a target="_blank" href="'.$national_id.'">' . $national_id . '</a></p>';
+}
+
+
+
 /*
  * This action hook calculates the interest to be paid
  */
@@ -88,6 +205,7 @@ function pay_on_credit_radio_choice_set_session( $posted_data ) {
         WC()->session->set( 'chosen_payment_duration', $output['payment_duration'] );
     }
 }
+
  
 /*
  * The class itself, please note that it is inside plugins_loaded action hook
